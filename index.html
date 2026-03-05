@@ -326,6 +326,7 @@
             document.getElementById('flashcard-container').style.display = 'none';
             document.getElementById('results').style.display = 'none';
             document.querySelector('.back-link').style.display = 'none';
+            loadLessonList();
         }
         
         function loadLessonList() {
@@ -345,14 +346,75 @@
         
         async function startFlashcards(lessonNumber, lessonTitle) {
             try {
-                const response = await fetch(`${lessonNumber}.json`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const vocabData = await response.json();
+                console.log('Loading vocab from:', `${lessonNumber}.json`);
                 
-                if (!Array.isArray(vocabData) || vocabData.length === 0) {
-                    throw new Error('Keine gültigen Vokabeln gefunden');
+                let vocabData;
+                
+                // Try to fetch from JSON file
+                try {
+                    const response = await fetch(`${lessonNumber}.json`);
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    vocabData = await response.json();
+                    console.log('Loaded vocab data:', vocabData);
+                } catch (fetchError) {
+                    console.log('Fetch failed, using embedded data:', fetchError.message);
+                    
+                    // Fallback to embedded data for local testing
+                    vocabData = [
+                        {
+                            "latin": "vester, vestra, vestrum",
+                            "german": "euer"
+                        },
+                        {
+                            "latin": "noster, nostra, nostrum",
+                            "german": "unser"
+                        },
+                        {
+                            "latin": "gravis, gravis, grave",
+                            "german": "schwer; wichtig; ernst"
+                        },
+                        {
+                            "latin": "tuus, tua, tuum",
+                            "german": "dein"
+                        },
+                        {
+                            "latin": "pro (m. Abl.)",
+                            "german": "vor; für; anstelle (von)"
+                        },
+                        {
+                            "latin": "se (Akk.) / sibi (Dat.) / secum (Abl.)",
+                            "german": "sich / sich / mit sich, bei sich"
+                        },
+                        {
+                            "latin": "facilis, facilis, facile",
+                            "german": "leicht; umgänglich"
+                        },
+                        {
+                            "latin": "se praebere, facile",
+                            "german": "sich zeigen, sich erweisen als"
+                        },
+                        {
+                            "latin": "acer, acris, acre",
+                            "german": "heftig; hart; scharf"
+                        },
+                        {
+                            "latin": "arcessere, arcessō, arcessīvī",
+                            "german": "herbeirufen, holen"
+                        }
+                    ];
+                }
+                
+                if (!Array.isArray(vocabData)) {
+                    throw new Error('Vokabeln sind kein Array');
+                }
+                
+                if (vocabData.length === 0) {
+                    throw new Error('Keine Vokabeln gefunden');
                 }
                 
                 currentVocabData = vocabData;
@@ -364,7 +426,8 @@
                 answeredCards.clear();
                 
                 // Shuffle cards
-                currentVocabData = currentVocabData.sort(() => Math.random() - 0.5);
+                currentVocabData = [...currentVocabData].sort(() => Math.random() - 0.5);
+                console.log('Shuffled vocab:', currentVocabData);
                 
                 document.getElementById('main-title').textContent = lessonTitle;
                 document.getElementById('lesson-list').style.display = 'none';
@@ -376,12 +439,14 @@
                 showCard();
             } catch (error) {
                 console.error('Fehler beim Laden der Vokabeln:', error);
-                alert('Fehler beim Laden der Vokabeln: ' + error.message);
+                alert('Fehler beim Laden: ' + error.message);
                 showLessonList();
             }
         }
         
         function showCard() {
+            console.log('showCard called, currentCardIndex:', currentCardIndex, 'vocabData length:', currentVocabData?.length);
+            
             if (!currentVocabData || currentVocabData.length === 0 || currentCardIndex >= currentVocabData.length) {
                 console.error('Keine Vokabeln verfügbar');
                 return;
@@ -390,6 +455,8 @@
             const card = document.getElementById('flashcard');
             const content = document.getElementById('card-content');
             const vocab = currentVocabData[currentCardIndex];
+            
+            console.log('Current vocab:', vocab);
             
             if (!vocab || !vocab.latin || !vocab.german) {
                 console.error('Ungültige Vokabel:', vocab);
