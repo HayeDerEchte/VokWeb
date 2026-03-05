@@ -157,13 +157,68 @@
             color: black;
             font-style: italic;
         }
+        
+        .welcome-container {
+            display: none;
+            text-align: center;
+            margin: 50px 0;
+        }
+        
+        .welcome-container input {
+            padding: 10px;
+            border: 1px solid black;
+            background: white;
+            font-family: inherit;
+            font-size: 16px;
+            margin: 10px;
+        }
+        
+        .welcome-container button {
+            padding: 10px 20px;
+            background: black;
+            color: white;
+            border: none;
+            font-family: inherit;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        .welcome-container button:hover {
+            background: #333;
+        }
+        
+        .greeting {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .greeting h2 {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <a href="#" class="back-link" onclick="showLessonList()">← Zurück zur Übersicht</a>
-    <h1 id="main-title">Was willst du heute üben?</h1>
     
-    <ul id="lesson-list" class="lesson-list"></ul>
+    <div id="welcome-container" class="welcome-container">
+        <h2>Wie heißt du?</h2>
+        <input type="text" id="name-input" placeholder="Dein Name" onkeypress="if(event.key === 'Enter') saveName()">
+        <button onclick="saveName()">Los geht's!</button>
+    </div>
+    
+    <div id="greeting" class="greeting">
+        <h2 id="greeting-text">Hallo!</h2>
+        <div class="tenor-gif-embed" data-postid="6253400970908487110" data-share-method="host" data-aspect-ratio="1.56028" data-width="100%">
+            <a href="https://tenor.com/view/aga-wave-hi-hello-yellow-gif-6253400970908487110">Aga Wave Sticker</a>from <a href="https://tenor.com/search/aga-stickers">Aga Stickers</a>
+        </div>
+        <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
+        <button onclick="showLessonList()" style="margin-top: 20px;">Weiter zum Lernen</button>
+    </div>
+    
+    <h1 id="main-title" style="display: none;">Was willst du heute üben?</h1>
+    
+    <ul id="lesson-list" class="lesson-list" style="display: none;"></ul>
     
     <div id="flashcard-container" class="flashcard-container">
         <div class="progress">
@@ -200,9 +255,51 @@
         let correctAnswers = 0;
         let wrongAnswers = [];
         let answeredCards = new Set();
+        let userName = localStorage.getItem('userName') || null;
+        
+        function checkFirstVisit() {
+            if (userName) {
+                showGreeting();
+            } else {
+                showWelcome();
+            }
+        }
+        
+        function showWelcome() {
+            document.getElementById('welcome-container').style.display = 'block';
+            document.getElementById('greeting').style.display = 'none';
+            document.getElementById('main-title').style.display = 'none';
+            document.getElementById('lesson-list').style.display = 'none';
+            document.querySelector('.back-link').style.display = 'none';
+            document.getElementById('flashcard-container').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+        }
+        
+        function showGreeting() {
+            document.getElementById('welcome-container').style.display = 'none';
+            document.getElementById('greeting').style.display = 'block';
+            document.getElementById('main-title').style.display = 'none';
+            document.getElementById('lesson-list').style.display = 'none';
+            document.querySelector('.back-link').style.display = 'none';
+            document.getElementById('flashcard-container').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('greeting-text').textContent = `Hallo ${userName}!`;
+        }
+        
+        function saveName() {
+            const nameInput = document.getElementById('name-input');
+            const name = nameInput.value.trim();
+            if (name) {
+                userName = name;
+                localStorage.setItem('userName', name);
+                showGreeting();
+            }
+        }
         
         function showLessonList() {
-            document.getElementById('main-title').textContent = 'Was willst du heute üben?';
+            document.getElementById('welcome-container').style.display = 'none';
+            document.getElementById('greeting').style.display = 'none';
+            document.getElementById('main-title').style.display = 'block';
             document.getElementById('lesson-list').style.display = 'block';
             document.getElementById('flashcard-container').style.display = 'none';
             document.getElementById('results').style.display = 'none';
@@ -333,7 +430,7 @@
         }
         
         // Lektionen beim Start laden
-        loadLessonList();
+        checkFirstVisit();
     </script>
 </body>
 </html>
