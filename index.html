@@ -174,7 +174,7 @@
         
         .welcome-message {
             opacity: 0;
-            transition: opacity 1s ease-in-out;
+            transition: opacity 0.5s ease-in-out;
         }
         
         .welcome-message.show {
@@ -290,7 +290,7 @@
                     document.getElementById('welcome-message').classList.remove('show');
                     setTimeout(() => {
                         showLessonList();
-                    }, 1000);
+                    }, 500);
                 }, 3000);
             } else {
                 loadLessonList();
@@ -346,7 +346,16 @@
         async function startFlashcards(lessonNumber, lessonTitle) {
             try {
                 const response = await fetch(`${lessonNumber}.json`);
-                currentVocabData = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const vocabData = await response.json();
+                
+                if (!Array.isArray(vocabData) || vocabData.length === 0) {
+                    throw new Error('Keine gültigen Vokabeln gefunden');
+                }
+                
+                currentVocabData = vocabData;
                 currentLesson = lessonNumber;
                 currentCardIndex = 0;
                 isFlipped = false;
@@ -367,13 +376,25 @@
                 showCard();
             } catch (error) {
                 console.error('Fehler beim Laden der Vokabeln:', error);
+                alert('Fehler beim Laden der Vokabeln: ' + error.message);
+                showLessonList();
             }
         }
         
         function showCard() {
+            if (!currentVocabData || currentVocabData.length === 0 || currentCardIndex >= currentVocabData.length) {
+                console.error('Keine Vokabeln verfügbar');
+                return;
+            }
+            
             const card = document.getElementById('flashcard');
             const content = document.getElementById('card-content');
             const vocab = currentVocabData[currentCardIndex];
+            
+            if (!vocab || !vocab.latin || !vocab.german) {
+                console.error('Ungültige Vokabel:', vocab);
+                return;
+            }
             
             card.classList.remove('flipped');
             isFlipped = false;
@@ -382,9 +403,19 @@
         }
         
         function flipCard() {
+            if (!currentVocabData || currentVocabData.length === 0 || currentCardIndex >= currentVocabData.length) {
+                console.error('Keine Vokabeln verfügbar');
+                return;
+            }
+            
             const card = document.getElementById('flashcard');
             const content = document.getElementById('card-content');
             const vocab = currentVocabData[currentCardIndex];
+            
+            if (!vocab || !vocab.latin || !vocab.german) {
+                console.error('Ungültige Vokabel:', vocab);
+                return;
+            }
             
             if (isFlipped) {
                 card.classList.remove('flipped');
