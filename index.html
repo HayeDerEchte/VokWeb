@@ -98,9 +98,55 @@
             background: #333;
         }
         
+        .btn.correct {
+            background: #2d5a2d;
+        }
+        
+        .btn.correct:hover {
+            background: #3a733a;
+        }
+        
+        .btn.incorrect {
+            background: #8b2d2d;
+        }
+        
+        .btn.incorrect:hover {
+            background: #a83333;
+        }
+        
         .progress {
             margin: 20px 0;
             font-size: 14px;
+        }
+        
+        .results {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .results h2 {
+            margin-bottom: 20px;
+        }
+        
+        .percentage {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .wrong-answers {
+            text-align: left;
+            margin: 20px 0;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .wrong-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid black;
         }
         
         .back-link {
@@ -129,9 +175,17 @@
         </div>
         
         <div class="flashcard-controls">
-            <button class="btn" onclick="previousCard()">← Vorherige</button>
-            <button class="btn" onclick="nextCard()">Nächste →</button>
+            <button class="btn incorrect" onclick="markIncorrect()">Falsch</button>
+            <button class="btn correct" onclick="markCorrect()">Richtig</button>
         </div>
+    </div>
+    
+    <div id="results" class="results">
+        <h2>Ergebnisse</h2>
+        <div class="percentage" id="percentage">0%</div>
+        <div id="correct-count">0 von 0 richtig</div>
+        <div class="wrong-answers" id="wrong-answers"></div>
+        <button class="btn" onclick="restartQuiz()">Neustart</button>
     </div>
     
     <script>
@@ -143,11 +197,15 @@
         let currentVocabData = [];
         let currentCardIndex = 0;
         let isFlipped = false;
+        let correctAnswers = 0;
+        let wrongAnswers = [];
+        let answeredCards = new Set();
         
         function showLessonList() {
             document.getElementById('main-title').textContent = 'Was willst du heute üben?';
             document.getElementById('lesson-list').style.display = 'block';
             document.getElementById('flashcard-container').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
             document.querySelector('.back-link').style.display = 'none';
         }
         
@@ -160,7 +218,6 @@
                 li.className = 'lesson-item';
                 li.innerHTML = `
                     <div class="latin">${lesson.title}</div>
-                    <div class="german">Klicke hier um zu starten</div>
                 `;
                 li.onclick = () => startFlashcards(lesson.number, lesson.title);
                 lessonList.appendChild(li);
@@ -174,10 +231,17 @@
                 currentLesson = lessonNumber;
                 currentCardIndex = 0;
                 isFlipped = false;
+                correctAnswers = 0;
+                wrongAnswers = [];
+                answeredCards.clear();
+                
+                // Shuffle cards
+                currentVocabData = currentVocabData.sort(() => Math.random() - 0.5);
                 
                 document.getElementById('main-title').textContent = lessonTitle;
                 document.getElementById('lesson-list').style.display = 'none';
                 document.getElementById('flashcard-container').style.display = 'block';
+                document.getElementById('results').style.display = 'none';
                 document.querySelector('.back-link').style.display = 'block';
                 document.getElementById('total-cards').textContent = currentVocabData.length;
                 
@@ -213,14 +277,59 @@
             isFlipped = !isFlipped;
         }
         
-        function nextCard() {
-            currentCardIndex = (currentCardIndex + 1) % currentVocabData.length;
-            showCard();
+        function markCorrect() {
+            if (!answeredCards.has(currentCardIndex)) {
+                correctAnswers++;
+                answeredCards.add(currentCardIndex);
+            }
+            nextCard();
         }
         
-        function previousCard() {
-            currentCardIndex = (currentCardIndex - 1 + currentVocabData.length) % currentVocabData.length;
-            showCard();
+        function markIncorrect() {
+            if (!answeredCards.has(currentCardIndex)) {
+                wrongAnswers.push(currentVocabData[currentCardIndex]);
+                answeredCards.add(currentCardIndex);
+            }
+            nextCard();
+        }
+        
+        function nextCard() {
+            if (currentCardIndex < currentVocabData.length - 1) {
+                currentCardIndex++;
+                showCard();
+            } else {
+                showResults();
+            }
+        }
+        
+        function showResults() {
+            const total = currentVocabData.length;
+            const percentage = Math.round((correctAnswers / total) * 100);
+            
+            document.getElementById('flashcard-container').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('percentage').textContent = percentage + '%';
+            document.getElementById('correct-count').textContent = `${correctAnswers} von ${total} richtig`;
+            
+            const wrongAnswersDiv = document.getElementById('wrong-answers');
+            wrongAnswersDiv.innerHTML = '';
+            
+            if (wrongAnswers.length > 0) {
+                wrongAnswersDiv.innerHTML = '<h3>Falsche Antworten:</h3>';
+                wrongAnswers.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'wrong-item';
+                    div.innerHTML = `
+                        <div class="latin">${item.latin}</div>
+                        <div class="german">${item.german}</div>
+                    `;
+                    wrongAnswersDiv.appendChild(div);
+                });
+            }
+        }
+        
+        function restartQuiz() {
+            startFlashcards(currentLesson, document.getElementById('main-title').textContent);
         }
         
         // Lektionen beim Start laden
