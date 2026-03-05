@@ -19,6 +19,11 @@
             padding: 20px;
             max-width: 800px;
             margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
         
         h1 {
@@ -159,88 +164,81 @@
         }
         
         .welcome-container {
-            display: none;
             text-align: center;
-            margin: 50px 0;
+            display: none;
         }
         
-        .welcome-container input {
+        .welcome-gif {
+            margin: 20px 0;
+        }
+        
+        .welcome-message {
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        
+        .welcome-message.show {
+            opacity: 1;
+        }
+        
+        .name-input {
             padding: 10px;
             border: 1px solid black;
-            background: white;
             font-family: inherit;
             font-size: 16px;
-            margin: 10px;
+            margin: 10px 0;
         }
         
-        .welcome-container button {
-            padding: 10px 20px;
+        .name-submit {
             background: black;
             color: white;
             border: none;
-            font-family: inherit;
+            padding: 10px 20px;
             cursor: pointer;
-            margin: 10px;
+            font-family: inherit;
+            font-size: 16px;
         }
         
-        .welcome-container button:hover {
+        .name-submit:hover {
             background: #333;
-        }
-        
-        .greeting {
-            display: none;
-            text-align: center;
-            margin: 30px 0;
-        }
-        
-        .greeting h2 {
-            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <a href="#" class="back-link" onclick="showLessonList()">← Zurück zur Übersicht</a>
-    
-    <div id="welcome-container" class="welcome-container">
-        <h2>Wie heißt du?</h2>
-        <input type="text" id="name-input" placeholder="Dein Name" onkeypress="if(event.key === 'Enter') saveName()">
-        <button onclick="saveName()">Los geht's!</button>
+    <div id="name-prompt" class="welcome-container">
+        <h1>Wie heißt du?</h1>
+        <input type="text" id="name-input" class="name-input" placeholder="Dein Name" autofocus>
+        <button class="name-submit" onclick="saveName()">Start</button>
     </div>
     
-    <div id="greeting" class="greeting">
-        <h2 id="greeting-text">Hallo!</h2>
-        <div class="tenor-gif-embed" data-postid="6253400970908487110" data-share-method="host" data-aspect-ratio="1.56028" data-width="100%">
-            <a href="https://tenor.com/view/aga-wave-hi-hello-yellow-gif-6253400970908487110">Aga Wave Sticker</a>from <a href="https://tenor.com/search/aga-stickers">Aga Stickers</a>
-        </div>
-        <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
-        <button onclick="showLessonList()" style="margin-top: 20px;">Weiter zum Lernen</button>
-    </div>
-    
-    <h1 id="main-title" style="display: none;">Was willst du heute üben?</h1>
-    
-    <ul id="lesson-list" class="lesson-list" style="display: none;"></ul>
-    
-    <div id="flashcard-container" class="flashcard-container">
-        <div class="progress">
-            <span id="current-card">1</span> / <span id="total-cards">1</span>
+    <div id="main-content" style="display: none;">
+        <a href="#" class="back-link" onclick="showLessonList()">← Zurück zur Übersicht</a>
+        <h1 id="main-title">Was willst du heute üben?</h1>
+        
+        <ul id="lesson-list" class="lesson-list"></ul>
+        
+        <div id="flashcard-container" class="flashcard-container">
+            <div class="progress">
+                <span id="current-card">1</span> / <span id="total-cards">1</span>
+            </div>
+            
+            <div id="flashcard" class="flashcard" onclick="flipCard()">
+                <div id="card-content"></div>
+            </div>
+            
+            <div class="flashcard-controls">
+                <button class="btn incorrect" onclick="markIncorrect()">Falsch</button>
+                <button class="btn correct" onclick="markCorrect()">Richtig</button>
+            </div>
         </div>
         
-        <div id="flashcard" class="flashcard" onclick="flipCard()">
-            <div id="card-content"></div>
+        <div id="results" class="results">
+            <h2>Ergebnisse</h2>
+            <div class="percentage" id="percentage">0%</div>
+            <div id="correct-count">0 von 0 richtig</div>
+            <div class="wrong-answers" id="wrong-answers"></div>
+            <button class="btn" onclick="restartQuiz()">Neustart</button>
         </div>
-        
-        <div class="flashcard-controls">
-            <button class="btn incorrect" onclick="markIncorrect()">Falsch</button>
-            <button class="btn correct" onclick="markCorrect()">Richtig</button>
-        </div>
-    </div>
-    
-    <div id="results" class="results">
-        <h2>Ergebnisse</h2>
-        <div class="percentage" id="percentage">0%</div>
-        <div id="correct-count">0 von 0 richtig</div>
-        <div class="wrong-answers" id="wrong-answers"></div>
-        <button class="btn" onclick="restartQuiz()">Neustart</button>
     </div>
     
     <script>
@@ -257,49 +255,73 @@
         let answeredCards = new Set();
         let userName = localStorage.getItem('userName') || null;
         
-        function checkFirstVisit() {
+        function checkUserName() {
             if (userName) {
-                showGreeting();
+                showMainContent();
             } else {
-                showWelcome();
+                showNamePrompt();
             }
         }
         
-        function showWelcome() {
-            document.getElementById('welcome-container').style.display = 'block';
-            document.getElementById('greeting').style.display = 'none';
-            document.getElementById('main-title').style.display = 'none';
-            document.getElementById('lesson-list').style.display = 'none';
-            document.querySelector('.back-link').style.display = 'none';
-            document.getElementById('flashcard-container').style.display = 'none';
-            document.getElementById('results').style.display = 'none';
+        function showNamePrompt() {
+            document.getElementById('name-prompt').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
         }
         
-        function showGreeting() {
-            document.getElementById('welcome-container').style.display = 'none';
-            document.getElementById('greeting').style.display = 'block';
-            document.getElementById('main-title').style.display = 'none';
-            document.getElementById('lesson-list').style.display = 'none';
-            document.querySelector('.back-link').style.display = 'none';
-            document.getElementById('flashcard-container').style.display = 'none';
-            document.getElementById('results').style.display = 'none';
-            document.getElementById('greeting-text').textContent = `Hallo ${userName}!`;
+        function showMainContent() {
+            document.getElementById('name-prompt').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            
+            if (userName) {
+                document.getElementById('main-title').innerHTML = `
+                    <div class="welcome-message" id="welcome-message">
+                        Hallo ${userName}<br>
+                        <img src="https://media.tenor.com/VsiLDRUVTcYAAAAi/aga-wave.gif" alt="Wave" class="welcome-gif">
+                    </div>
+                `;
+                
+                // Fade in welcome message
+                setTimeout(() => {
+                    document.getElementById('welcome-message').classList.add('show');
+                }, 100);
+                
+                // After 3 seconds, transition to lesson selection
+                setTimeout(() => {
+                    document.getElementById('welcome-message').classList.remove('show');
+                    setTimeout(() => {
+                        showLessonList();
+                    }, 1000);
+                }, 3000);
+            } else {
+                loadLessonList();
+            }
         }
         
         function saveName() {
             const nameInput = document.getElementById('name-input');
             const name = nameInput.value.trim();
+            
             if (name) {
                 userName = name;
-                localStorage.setItem('userName', name);
-                showGreeting();
+                localStorage.setItem('userName', userName);
+                showMainContent();
             }
         }
         
+        // Enter key support for name input
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameInput = document.getElementById('name-input');
+            if (nameInput) {
+                nameInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        saveName();
+                    }
+                });
+            }
+        });
+        
         function showLessonList() {
-            document.getElementById('welcome-container').style.display = 'none';
-            document.getElementById('greeting').style.display = 'none';
-            document.getElementById('main-title').style.display = 'block';
+            document.getElementById('main-title').innerHTML = 'Was willst du heute üben?';
             document.getElementById('lesson-list').style.display = 'block';
             document.getElementById('flashcard-container').style.display = 'none';
             document.getElementById('results').style.display = 'none';
@@ -430,7 +452,7 @@
         }
         
         // Lektionen beim Start laden
-        checkFirstVisit();
+        checkUserName();
     </script>
 </body>
 </html>
