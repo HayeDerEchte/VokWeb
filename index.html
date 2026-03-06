@@ -283,206 +283,6 @@
         .name-submit:hover {
             background: #333;
         }
-        
-        .settings-btn {
-            position: fixed;
-            bottom: 40px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 20px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            background: transparent;
-            border: none;
-            color: black;
-        }
-        
-        .settings-btn:hover {
-            background: rgba(0,0,0,0.1);
-        }
-        
-        .settings-menu {
-            position: fixed;
-            top: 0;
-            right: -300px;
-            width: 300px;
-            height: 100vh;
-            background: white;
-            border-left: 1px solid black;
-            padding: 20px;
-            transition: right 0.3s ease-in-out;
-            z-index: 1001;
-            box-sizing: border-box;
-        }
-        
-        .settings-menu.open {
-            right: 0;
-        }
-        
-        .settings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid black;
-        }
-        
-        .settings-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: black;
-        }
-        
-        .settings-close:hover {
-            background: rgba(0,0,0,0.1);
-        }
-        
-        .setting-item {
-            margin-bottom: 20px;
-        }
-        
-        .setting-label {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            padding: 10px 0;
-        }
-        
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 24px;
-            background: #ccc;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .toggle-switch.active {
-            background: black;
-        }
-        
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.3s;
-        }
-        
-        .toggle-switch.active::after {
-            transform: translateX(26px);
-        }
-        
-        body.dark-mode {
-            background: #1a1a1a;
-            color: #ffffff;
-        }
-        
-        body.dark-mode .flashcard {
-            background: #2a2a2a;
-            border-color: #ffffff;
-            color: #ffffff;
-        }
-        
-        body.dark-mode .flashcard.flipped {
-            background: #ffffff;
-            color: #1a1a1a;
-        }
-        
-        body.dark-mode .btn {
-            background: #ffffff;
-            color: #1a1a1a;
-        }
-        
-        body.dark-mode .btn:hover {
-            background: #cccccc;
-        }
-        
-        body.dark-mode .btn.correct {
-            background: #4CAF50;
-            color: white;
-        }
-        
-        body.dark-mode .btn.correct:hover {
-            background: #45a049;
-        }
-        
-        body.dark-mode .btn.incorrect {
-            background: #f44336;
-            color: white;
-        }
-        
-        body.dark-mode .btn.incorrect:hover {
-            background: #da190b;
-        }
-        
-        body.dark-mode .lesson-item,
-        body.dark-mode .vocab-item,
-        body.dark-mode .wrong-item {
-            border-bottom-color: #ffffff;
-        }
-        
-        body.dark-mode .lesson-item:hover,
-        body.dark-mode .vocab-item:hover {
-            background: #333333;
-        }
-        
-        body.dark-mode .settings-menu {
-            background: #2a2a2a;
-            border-left-color: #ffffff;
-        }
-        
-        body.dark-mode .settings-close {
-            color: #ffffff;
-        }
-        
-        body.dark-mode .settings-close:hover {
-            background: rgba(255,255,255,0.1);
-        }
-        
-        body.dark-mode .toggle-switch {
-            background: #666;
-        }
-        
-        body.dark-mode .toggle-switch.active {
-            background: #ffffff;
-        }
-        
-        body.dark-mode .toggle-switch::after {
-            background: #1a1a1a;
-        }
-        
-        body.dark-mode .name-input {
-            background: #2a2a2a;
-            border-color: #ffffff;
-            color: #ffffff;
-        }
-        
-        body.dark-mode .back-link {
-            color: #ffffff;
-        }
-        
-        body.dark-mode .settings-btn {
-            color: #ffffff;
-        }
-        
-        body.dark-mode .settings-btn:hover {
-            background: rgba(255,255,255,0.1);
-        }
     </style>
 </head>
 <body>
@@ -522,21 +322,6 @@
         </div>
     </div>
     
-    <!-- Settings Menu -->
-    <div id="settings-menu" class="settings-menu">
-        <div class="settings-header">
-            <h2>Einstellungen</h2>
-            <button class="settings-close" onclick="closeSettings()">×</button>
-        </div>
-        
-        <div class="setting-item">
-            <div class="setting-label" onclick="toggleDarkMode()">
-                <span>Dunkelmodus</span>
-                <div id="dark-mode-toggle" class="toggle-switch"></div>
-            </div>
-        </div>
-    </div>
-    
     <script>
         const lessons = [
             { number: 15, title: "Lektion 15" },
@@ -551,16 +336,6 @@
         let wrongAnswers = [];
         let answeredCards = new Set();
         let userName = localStorage.getItem('userName') || null;
-        let darkMode = localStorage.getItem('darkMode') === 'true';
-        
-        // Initialize dark mode on page load
-        if (darkMode) {
-            document.body.classList.add('dark-mode');
-            const darkModeToggle = document.getElementById('dark-mode-toggle');
-            if (darkModeToggle) {
-                darkModeToggle.classList.add('active');
-            }
-        }
         
         async function detectLessonFiles() {
             const detectedLessons = [];
@@ -596,7 +371,7 @@
             document.getElementById('main-content').style.display = 'none';
         }
         
-        async function showMainContent() {
+        function showMainContent() {
             document.getElementById('name-prompt').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
             
@@ -616,23 +391,23 @@
                 // After 3 seconds, transition to lesson selection
                 setTimeout(() => {
                     document.getElementById('welcome-message').classList.remove('show');
-                    setTimeout(async () => {
-                        await showLessonList();
+                    setTimeout(() => {
+                        showLessonList();
                     }, 500);
                 }, 3000);
             } else {
-                await loadLessonList();
+                loadLessonList();
             }
         }
         
-        async function saveName() {
+        function saveName() {
             const nameInput = document.getElementById('name-input');
             const name = nameInput.value.trim();
             
             if (name) {
                 userName = name;
                 localStorage.setItem('userName', userName);
-                await showMainContent();
+                showMainContent();
             }
         }
         
@@ -640,22 +415,22 @@
         document.addEventListener('DOMContentLoaded', function() {
             const nameInput = document.getElementById('name-input');
             if (nameInput) {
-                nameInput.addEventListener('keypress', async function(e) {
+                nameInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
-                        await saveName();
+                        saveName();
                     }
                 });
             }
         });
         
-        async function showLessonList() {
+        function showLessonList() {
             document.getElementById('main-title').innerHTML = 'Was willst du heute üben?';
             document.getElementById('main-title').classList.add('fade-in');
             document.getElementById('lesson-list').style.display = 'block';
             document.getElementById('flashcard-container').style.display = 'none';
             document.getElementById('results').style.display = 'none';
             document.querySelector('.back-link').style.display = 'none';
-            await loadLessonList();
+            loadLessonList();
         }
         
         async function loadLessonList() {
@@ -664,11 +439,9 @@
             
             // Detect available lesson files
             const detectedLessons = await detectLessonFiles();
-            console.log('Detected lessons:', detectedLessons);
             
             // Use detected lessons or fallback to hardcoded lessons
             const lessonsToUse = detectedLessons.length > 0 ? detectedLessons : lessons;
-            console.log('Using lessons:', lessonsToUse);
             
             lessonsToUse.forEach((lesson, index) => {
                 const li = document.createElement('li');
@@ -680,13 +453,6 @@
                 li.onclick = () => startFlashcards(lesson.number, lesson.title);
                 lessonList.appendChild(li);
             });
-            
-            // Add settings button after lessons are loaded
-            const settingsBtn = document.createElement('button');
-            settingsBtn.className = 'btn settings-btn';
-            settingsBtn.textContent = '⚙';
-            settingsBtn.onclick = openSettings;
-            lessonList.appendChild(settingsBtn);
         }
         
         async function startFlashcards(lessonNumber, lessonTitle) {
@@ -988,29 +754,6 @@
             progress.style.animation = 'fadeIn 0.4s ease-in-out 0.2s forwards';
             
             showCard();
-        }
-        
-        function openSettings() {
-            document.getElementById('settings-menu').classList.add('open');
-        }
-        
-        function closeSettings() {
-            document.getElementById('settings-menu').classList.remove('open');
-        }
-        
-        function toggleDarkMode() {
-            darkMode = !darkMode;
-            const darkModeToggle = document.getElementById('dark-mode-toggle');
-            
-            if (darkMode) {
-                document.body.classList.add('dark-mode');
-                darkModeToggle.classList.add('active');
-            } else {
-                document.body.classList.remove('dark-mode');
-                darkModeToggle.classList.remove('active');
-            }
-            
-            localStorage.setItem('darkMode', darkMode);
         }
         
         checkUserName();
