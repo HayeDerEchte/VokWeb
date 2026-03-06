@@ -419,18 +419,31 @@
             // Check for JSON files from 1 to 50
             for (let i = 1; i <= 50; i++) {
                 try {
-                    const response = await fetch(`${i}.json`);
+                    const response = await fetch(`${i}.json`, {
+                        mode: 'cors',
+                        cache: 'no-cache'
+                    });
+                    
                     if (response.ok) {
-                        detectedLessons.push({
-                            number: i,
-                            title: `Lektion ${i}`
-                        });
+                        try {
+                            const data = await response.json();
+                            if (Array.isArray(data) && data.length > 0) {
+                                detectedLessons.push({
+                                    number: i,
+                                    title: `Lektion ${i}`
+                                });
+                            }
+                        } catch (jsonError) {
+                            console.warn(`Invalid JSON in ${i}.json:`, jsonError);
+                        }
                     }
                 } catch (error) {
-                    // File doesn't exist, continue
+                    // File doesn't exist or CORS issue, continue
+                    console.log(`Could not load ${i}.json:`, error.message);
                 }
             }
             
+            console.log('Detected lessons:', detectedLessons);
             return detectedLessons;
         }
         
@@ -519,12 +532,38 @@
             const lessonList = document.getElementById('lesson-list');
             lessonList.innerHTML = '';
             
-            // Detect available lesson files
-            const detectedLessons = await detectLessonFiles();
+            // Always show hardcoded lessons first
+            const lessonsToUse = [...lessons];
             
-            // Use detected lessons or fallback to hardcoded lessons
-            const lessonsToUse = detectedLessons.length > 0 ? detectedLessons : lessons;
+            // Try to detect additional lessons asynchronously
+            detectLessonFiles().then(detectedLessons => {
+                if (detectedLessons.length > 0) {
+                    // Add any lessons that aren't already in the hardcoded list
+                    detectedLessons.forEach(detectedLesson => {
+                        if (!lessonsToUse.find(l => l.number === detectedLesson.number)) {
+                            lessonsToUse.push(detectedLesson);
+                        }
+                    });
+                    
+                    // Sort by lesson number
+                    lessonsToUse.sort((a, b) => a.number - b.number);
+                    
+                    // Re-render the list with all lessons
+                    lessonList.innerHTML = '';
+                    lessonsToUse.forEach((lesson, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'lesson-item';
+                        li.style.animationDelay = `${index * 0.1}s`;
+                        li.innerHTML = `
+                            <div class="latin">${lesson.title}</div>
+                        `;
+                        li.onclick = () => startFlashcards(lesson.number, lesson.title);
+                        lessonList.appendChild(li);
+                    });
+                }
+            });
             
+            // Immediately render the hardcoded lessons
             lessonsToUse.forEach((lesson, index) => {
                 const li = document.createElement('li');
                 li.className = 'lesson-item';
@@ -545,7 +584,10 @@
                 
                 // Try to fetch from JSON file
                 try {
-                    const response = await fetch(`${lessonNumber}.json`);
+                    const response = await fetch(`${lessonNumber}.json`, {
+                        mode: 'cors',
+                        cache: 'no-cache'
+                    });
                     console.log('Response status:', response.status);
                     
                     if (!response.ok) {
