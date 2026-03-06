@@ -588,7 +588,7 @@
             document.getElementById('main-content').style.display = 'none';
         }
         
-        function showMainContent() {
+        async function showMainContent() {
             document.getElementById('name-prompt').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
             
@@ -608,23 +608,23 @@
                 // After 3 seconds, transition to lesson selection
                 setTimeout(() => {
                     document.getElementById('welcome-message').classList.remove('show');
-                    setTimeout(() => {
-                        showLessonList();
+                    setTimeout(async () => {
+                        await showLessonList();
                     }, 500);
                 }, 3000);
             } else {
-                loadLessonList();
+                await loadLessonList();
             }
         }
         
-        function saveName() {
+        async function saveName() {
             const nameInput = document.getElementById('name-input');
             const name = nameInput.value.trim();
             
             if (name) {
                 userName = name;
                 localStorage.setItem('userName', userName);
-                showMainContent();
+                await showMainContent();
             }
         }
         
@@ -632,22 +632,22 @@
         document.addEventListener('DOMContentLoaded', function() {
             const nameInput = document.getElementById('name-input');
             if (nameInput) {
-                nameInput.addEventListener('keypress', function(e) {
+                nameInput.addEventListener('keypress', async function(e) {
                     if (e.key === 'Enter') {
-                        saveName();
+                        await saveName();
                     }
                 });
             }
         });
         
-        function showLessonList() {
+        async function showLessonList() {
             document.getElementById('main-title').innerHTML = 'Was willst du heute üben?';
             document.getElementById('main-title').classList.add('fade-in');
             document.getElementById('lesson-list').style.display = 'block';
             document.getElementById('flashcard-container').style.display = 'none';
             document.getElementById('results').style.display = 'none';
             document.querySelector('.back-link').style.display = 'none';
-            loadLessonList();
+            await loadLessonList();
         }
         
         async function loadLessonList() {
@@ -671,12 +671,17 @@
                 lessonList.appendChild(li);
             });
             
-            // Add settings button
+            // Add settings button after lessons are loaded
             const settingsBtn = document.createElement('button');
             settingsBtn.className = 'btn settings-btn';
             settingsBtn.textContent = '⚙';
             settingsBtn.onclick = openSettings;
             lessonList.appendChild(settingsBtn);
+            
+            // Apply dark mode to settings button if needed
+            if (darkMode) {
+                settingsBtn.style.color = '#ffffff';
+            }
         }
         
         async function startFlashcards(lessonNumber, lessonTitle) {
