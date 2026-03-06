@@ -1,106 +1,28 @@
 [
-  {
-    "latin": "vester, vestra, vestrum",
-    "german": "euer"
-  },
-  {
-    "latin": "noster, nostra, nostrum",
-    "german": "unser"
-  },
-  {
-    "latin": "gravis, gravis, grave",
-    "german": "schwer; wichtig; ernst"
-  },
-  {
-    "latin": "tuus, tua, tuum",
-    "german": "dein"
-  },
-  {
-    "latin": "pro (m. Abl.)",
-    "german": "vor; für; anstelle (von)"
-  },
-  {
-    "latin": "se (Akk.) / sibi (Dat.) / secum (Abl.)",
-    "german": "sich / sich / mit sich, bei sich"
-  },
-  {
-    "latin": "facilis, facilis, facile",
-    "german": "leicht; umgänglich"
-  },
-  {
-    "latin": "se praebere, facile",
-    "german": "sich zeigen, sich erweisen als"
-  },
-  {
-    "latin": "acer, acris, acre",
-    "german": "heftig; hart; scharf"
-  },
-  {
-    "latin": "arcessere, arcessō, arcessīvī",
-    "german": "herbeirufen, holen"
-  },
-  {
-    "latin": "brevis, brevis, breve",
-    "german": "kurz"
-  },
-  {
-    "latin": "tempus, temporis n",
-    "german": "die Zeit; der (passende) Zeitpunkt"
-  },
-  {
-    "latin": "felix, Gen. felicis",
-    "german": "glücklich; vom Glück begünstigt"
-  },
-  {
-    "latin": "suus, sua, suum",
-    "german": "sein; ihr"
-  },
-  {
-    "latin": "meus, mea, meum",
-    "german": "mein"
-  },
-  {
-    "latin": "iudicium, iudiciī n",
-    "german": "das Urteil; das Gericht, der Gerichtshof"
-  },
-  {
-    "latin": "omnis, omnis, omne",
-    "german": "jeder; ganz; Pl. alle"
-  },
-  {
-    "latin": "forma, formae f",
-    "german": "die Form, die Gestalt; die Schönheit"
-  },
-  {
-    "latin": "vindicāre, vindicō, vindicāvī",
-    "german": "beanspruchen"
-  },
-  {
-    "latin": "iuvenis, iuvenis m",
-    "german": "der junge Mann"
-  },
-  {
-    "latin": "iūdicāre, iūdicō, iūdicāvī",
-    "german": "(be)urteilen; richten"
-  },
-  {
-    "latin": "animus, animī m",
-    "german": "das Herz; der Sinn; der Mut; der Geist"
-  },
-  {
-    "latin": "conciliare, conciliō, conciliāvī",
-    "german": "gewinnen; vermitteln"
-  },
-  {
-    "latin": "regnum, regnī n",
-    "german": "das (König-)Reich; die Königsherrschaft"
-  },
-  {
-    "latin": "promittere, promittō, promīsī",
-    "german": "versprechen"
-  },
-  {
-    "latin": "mortalis, mortalis, mortale",
-    "german": "sterblich"
-  }
+  {"latin": "vester, vestra, vestrum", "german": "euer"},
+  {"latin": "noster, nostra, nostrum", "german": "unser"},
+  {"latin": "gravis, gravis, grave", "german": "schwer, wichtig; ernst"},
+  {"latin": "tuus, tua, tuum", "german": "dein"},
+  {"latin": "pro (m. Abl.)", "german": "vor; für; anstelle (von)"},
+  {"latin": "se (Akk.) / sibi (Dat.) / secum (Abl.)", "german": "sich / sich / mit sich, bei sich"},
+  {"latin": "facilis, facilis, facile", "german": "leicht; umgänglich"},
+  {"latin": "se praebere", "german": "sich zeigen, sich erweisen als"},
+  {"latin": "acer, acris, acre", "german": "heftig; hart; scharf"},
+  {"latin": "arcessere, arcesso, arcessivi", "german": "herbeirufen, holen"},
+  {"latin": "brevis, brevis, breve", "german": "kurz"},
+  {"latin": "tempus, temporis n", "german": "die Zeit; der (passende) Zeitpunkt"},
+  {"latin": "felix (Gen. felicis)", "german": "glücklich; vom Glück begünstigt"},
+  {"latin": "suus, sua, suum", "german": "sein; ihr"},
+  {"latin": "meus, mea, meum", "german": "mein"},
+  {"latin": "iudicium, iudicii n", "german": "das Urteil; das Gericht, der Gerichtshof"},
+  {"latin": "omnis, omnis, omne", "german": "jeder; ganz; Pl. alle"},
+  {"latin": "forma, formae f", "german": "die Form, die Gestalt; die Schönheit"},
+  {"latin": "vindicere, vindico, vindicavi", "german": "beanspruchen"},
+  {"latin": "iuvenis, iuvenis m", "german": "der junge Mann"},
+  {"latin": "iudicare, iudico, iudicavi", "german": "(be)urteilen; richten"},
+  {"latin": "animus, animi m", "german": "das Herz; der Sinn; der Mut; der Geist"},
+  {"latin": "conciliare, concilio, conciliavi", "german": "gewinnen; vermitteln"},
+  {"latin": "regnum, regni n", "german": "das (König-)Reich; die Königsherrschaft"},
+  {"latin": "promittere, promitto, promisi", "german": "versprechen"},
+  {"latin": "mortalis, mortalis, mortale", "german": "sterblich"}
 ]
