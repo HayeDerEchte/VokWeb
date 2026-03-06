@@ -181,6 +181,87 @@
             opacity: 1;
         }
         
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 0.8s ease-in-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .lesson-item {
+            opacity: 0;
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .flashcard-container {
+            opacity: 0;
+            animation: fadeIn 0.6s ease-in-out 0.3s forwards;
+        }
+        
+        .flashcard {
+            opacity: 0;
+            animation: cardAppear 0.8s ease-out 0.5s forwards;
+            transform: scale(0.9);
+        }
+        
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        .flashcard-controls {
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in-out 0.7s forwards;
+        }
+        
+        .progress {
+            opacity: 0;
+            animation: fadeIn 0.4s ease-in-out 0.2s forwards;
+        }
+        
+        #card-content {
+            opacity: 0;
+            animation: textFadeIn 0.6s ease-out 0.8s forwards;
+            transform: translateY(10px);
+        }
+        
+        @keyframes textFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .name-input {
             padding: 10px;
             border: 1px solid black;
@@ -322,6 +403,7 @@
         
         function showLessonList() {
             document.getElementById('main-title').innerHTML = 'Was willst du heute üben?';
+            document.getElementById('main-title').classList.add('fade-in');
             document.getElementById('lesson-list').style.display = 'block';
             document.getElementById('flashcard-container').style.display = 'none';
             document.getElementById('results').style.display = 'none';
@@ -333,9 +415,10 @@
             const lessonList = document.getElementById('lesson-list');
             lessonList.innerHTML = '';
             
-            lessons.forEach(lesson => {
+            lessons.forEach((lesson, index) => {
                 const li = document.createElement('li');
                 li.className = 'lesson-item';
+                li.style.animationDelay = `${index * 0.1}s`;
                 li.innerHTML = `
                     <div class="latin">${lesson.title}</div>
                 `;
@@ -436,6 +519,27 @@
                 document.querySelector('.back-link').style.display = 'block';
                 document.getElementById('total-cards').textContent = currentVocabData.length;
                 
+                // Reset and trigger animations
+                const flashcardContainer = document.getElementById('flashcard-container');
+                const flashcard = document.getElementById('flashcard');
+                const flashcardControls = document.querySelector('.flashcard-controls');
+                const progress = document.querySelector('.progress');
+                
+                // Remove animation classes
+                flashcardContainer.style.animation = 'none';
+                flashcard.style.animation = 'none';
+                flashcardControls.style.animation = 'none';
+                progress.style.animation = 'none';
+                
+                // Force reflow
+                void flashcardContainer.offsetWidth;
+                
+                // Re-add animations
+                flashcardContainer.style.animation = 'fadeIn 0.6s ease-in-out 0.3s forwards';
+                flashcard.style.animation = 'cardAppear 0.8s ease-out 0.5s forwards';
+                flashcardControls.style.animation = 'fadeIn 0.5s ease-in-out 0.7s forwards';
+                progress.style.animation = 'fadeIn 0.4s ease-in-out 0.2s forwards';
+                
                 showCard();
             } catch (error) {
                 console.error('Fehler beim Laden der Vokabeln:', error);
@@ -465,7 +569,19 @@
             
             card.classList.remove('flipped');
             isFlipped = false;
+            
+            // Reset text animation
+            content.style.animation = 'none';
+            content.style.opacity = '0';
+            content.style.transform = 'translateY(10px)';
+            
+            // Force reflow
+            void content.offsetWidth;
+            
+            // Set content and trigger animation
             content.textContent = vocab.latin;
+            content.style.animation = 'textFadeIn 0.6s ease-out forwards';
+            
             document.getElementById('current-card').textContent = currentCardIndex + 1;
         }
         
@@ -543,13 +659,75 @@
                     wrongAnswersDiv.appendChild(div);
                 });
             }
+            
+            const resultsDiv = document.getElementById('results');
+            const existingButton = document.getElementById('practice-wrong-btn');
+            if (existingButton) {
+                existingButton.remove();
+            }
+            
+            if (wrongAnswers.length > 0) {
+                const practiceWrongBtn = document.createElement('button');
+                practiceWrongBtn.id = 'practice-wrong-btn';
+                practiceWrongBtn.className = 'btn';
+                practiceWrongBtn.textContent = 'Falsche Vokabeln üben';
+                practiceWrongBtn.onclick = practiceWrongAnswers;
+                practiceWrongBtn.style.marginLeft = '10px';
+                
+                const restartBtn = resultsDiv.querySelector('button');
+                restartBtn.parentNode.insertBefore(practiceWrongBtn, restartBtn.nextSibling);
+            }
         }
         
         function restartQuiz() {
             startFlashcards(currentLesson, document.getElementById('main-title').textContent);
         }
         
-        // Lektionen beim Start laden
+        function practiceWrongAnswers() {
+            if (wrongAnswers.length === 0) {
+                alert('Keine falschen Antworten zum Üben vorhanden.');
+                return;
+            }
+            
+            currentVocabData = [...wrongAnswers];
+            currentCardIndex = 0;
+            isFlipped = false;
+            correctAnswers = 0;
+            const previousWrongAnswers = [...wrongAnswers];
+            wrongAnswers = [];
+            answeredCards.clear();
+            
+            currentVocabData = currentVocabData.sort(() => Math.random() - 0.5);
+            
+            document.getElementById('main-title').textContent = 'Falsche Vokabeln üben';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('flashcard-container').style.display = 'block';
+            document.getElementById('total-cards').textContent = currentVocabData.length;
+            
+            // Reset and trigger animations
+            const flashcardContainer = document.getElementById('flashcard-container');
+            const flashcard = document.getElementById('flashcard');
+            const flashcardControls = document.querySelector('.flashcard-controls');
+            const progress = document.querySelector('.progress');
+            
+            // Remove animation classes
+            flashcardContainer.style.animation = 'none';
+            flashcard.style.animation = 'none';
+            flashcardControls.style.animation = 'none';
+            progress.style.animation = 'none';
+            
+            // Force reflow
+            void flashcardContainer.offsetWidth;
+            
+            // Re-add animations
+            flashcardContainer.style.animation = 'fadeIn 0.6s ease-in-out 0.3s forwards';
+            flashcard.style.animation = 'cardAppear 0.8s ease-out 0.5s forwards';
+            flashcardControls.style.animation = 'fadeIn 0.5s ease-in-out 0.7s forwards';
+            progress.style.animation = 'fadeIn 0.4s ease-in-out 0.2s forwards';
+            
+            showCard();
+        }
+        
         checkUserName();
     </script>
 </body>
