@@ -475,6 +475,14 @@
         body.dark-mode .back-link {
             color: #ffffff;
         }
+        
+        body.dark-mode .settings-btn {
+            color: #ffffff;
+        }
+        
+        body.dark-mode .settings-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body>
@@ -656,9 +664,11 @@
             
             // Detect available lesson files
             const detectedLessons = await detectLessonFiles();
+            console.log('Detected lessons:', detectedLessons);
             
             // Use detected lessons or fallback to hardcoded lessons
             const lessonsToUse = detectedLessons.length > 0 ? detectedLessons : lessons;
+            console.log('Using lessons:', lessonsToUse);
             
             lessonsToUse.forEach((lesson, index) => {
                 const li = document.createElement('li');
@@ -677,11 +687,6 @@
             settingsBtn.textContent = '⚙';
             settingsBtn.onclick = openSettings;
             lessonList.appendChild(settingsBtn);
-            
-            // Apply dark mode to settings button if needed
-            if (darkMode) {
-                settingsBtn.style.color = '#ffffff';
-            }
         }
         
         async function startFlashcards(lessonNumber, lessonTitle) {
