@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vokabeln</title>
+    <title>Vokabeln & Formen</title>
     <style>
         * {
             margin: 0;
@@ -35,6 +35,8 @@
         
         .lesson-list, .vocab-list {
             list-style: none;
+            width: 100%;
+            max-width: 500px;
         }
         
         .lesson-item, .vocab-item {
@@ -63,6 +65,8 @@
             display: none;
             text-align: center;
             margin-top: 30px;
+            width: 100%;
+            max-width: 500px;
         }
         
         .flashcard {
@@ -128,6 +132,8 @@
             display: none;
             text-align: center;
             margin: 30px 0;
+            width: 100%;
+            max-width: 500px;
         }
         
         .results h2 {
@@ -305,6 +311,63 @@
                 transform: translateX(100px);
             }
         }
+
+        /* Grammar Tables Styles */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-family: 'Times New Roman', serif;
+        }
+        
+        th, td {
+            border: 1px solid black;
+            padding: 12px 10px;
+            text-align: center;
+            font-size: 15px;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        
+        .table-container {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .table-controls {
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .coverable {
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            font-weight: bold;
+        }
+        
+        .coverable.covered {
+            background-color: black;
+            color: black;
+        }
+        
+        .coverable.covered::after {
+            content: "?";
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -315,11 +378,49 @@
     </div>
     
     <div id="main-content" style="display: none;">
-        <a href="#" class="back-link" onclick="showLessonList()">← Zurück zur Übersicht</a>
+        <a href="#" class="back-link" onclick="goBack()">← Zurück</a>
         <h1 id="main-title">Was willst du heute üben?</h1>
         
-        <ul id="lesson-list" class="lesson-list"></ul>
+        <!-- Main Selection Menu -->
+        <ul id="main-menu" class="lesson-list">
+            <li class="lesson-item" onclick="showLessonList()">
+                <div class="latin">Vokabeln lernen</div>
+                <div class="german">Vokabel-Trainer nach Lektionen</div>
+            </li>
+            <li class="lesson-item" onclick="showNounSelector()">
+                <div class="latin">Substantive (Deklinationstabellen)</div>
+                <div class="german">Nomen ansehen und durch Tippen abdecken</div>
+            </li>
+            <li class="lesson-item" onclick="showAdjSelector()">
+                <div class="latin">Adjektive (Deklinationstabellen)</div>
+                <div class="german">Eigenschaften ansehen und durch Tippen abdecken</div>
+            </li>
+            <li class="lesson-item" onclick="showPronSelector()">
+                <div class="latin">Pronomen (Deklinationstabellen)</div>
+                <div class="german">Fürwörter ansehen und durch Tippen abdecken</div>
+            </li>
+            <li class="lesson-item" onclick="showVerbSelector()">
+                <div class="latin">Verben (Konjugationstabellen)</div>
+                <div class="german">Tätigkeitswörter ansehen und durch Tippen abdecken</div>
+            </li>
+        </ul>
         
+        <!-- Vocab Lessons list -->
+        <ul id="lesson-list" class="lesson-list" style="display: none;"></ul>
+        
+        <!-- Nouns selector list -->
+        <ul id="noun-list" class="lesson-list" style="display: none;"></ul>
+
+        <!-- Adjectives selector list -->
+        <ul id="adj-list" class="lesson-list" style="display: none;"></ul>
+
+        <!-- Pronouns selector list -->
+        <ul id="pron-list" class="lesson-list" style="display: none;"></ul>
+        
+        <!-- Verbs selector list -->
+        <ul id="verb-list" class="lesson-list" style="display: none;"></ul>
+        
+        <!-- Flashcard Quiz Container -->
         <div id="flashcard-container" class="flashcard-container">
             <div class="progress">
                 <span id="current-card">1</span> / <span id="total-cards">1</span>
@@ -334,7 +435,18 @@
                 <button class="btn correct" onclick="markCorrect()">Richtig</button>
             </div>
         </div>
+
+        <!-- Grammar Table Practice Container -->
+        <div id="table-container" class="table-container">
+            <h2 id="table-title" style="font-weight: normal; font-size: 20px;">Wort</h2>
+            <div class="table-controls">
+                <button class="btn" onclick="coverAllCells()">Alle verdecken</button>
+                <button class="btn" onclick="revealAllCells()">Alle aufdecken</button>
+            </div>
+            <div id="table-content"></div>
+        </div>
         
+        <!-- Results Container -->
         <div id="results" class="results">
             <h2>Ergebnisse</h2>
             <div class="percentage" id="percentage">0%</div>
@@ -357,10 +469,347 @@
         let correctAnswers = 0;
         let wrongAnswers = [];
         let answeredCards = new Set();
+        
         let userName = localStorage.getItem('userName') || null;
         let userPoints = parseInt(localStorage.getItem('userPoints') || '0');
         let lastPlayDate = localStorage.getItem('lastPlayDate') || null;
         let dailyPointsEarned = parseInt(localStorage.getItem('dailyPointsEarned') || '0');
+
+        let currentView = 'menu'; // 'menu', 'lessons', 'flashcards', 'noun-selector', 'adj-selector', 'pron-selector', 'verb-selector', 'table', 'results'
+        let tableType = ''; // 'nouns', 'adjectives', 'pronouns', 'verbs'
+
+        const nounsDb = [
+            {
+                word: "amica",
+                translation: "Freundin",
+                declension: "a-Deklination (f)",
+                forms: {
+                    sg: { nom: "amica", gen: "amicae", dat: "amicae", akk: "amicam", abl: "amica" },
+                    pl: { nom: "amicae", gen: "amicarum", dat: "amicis", akk: "amicas", abl: "amicis" }
+                }
+            },
+            {
+                word: "flamma",
+                translation: "Flamme",
+                declension: "a-Deklination (f)",
+                forms: {
+                    sg: { nom: "flamma", gen: "flammae", dat: "flammae", akk: "flammam", abl: "flamma" },
+                    pl: { nom: "flammae", gen: "flammarum", dat: "flammis", akk: "flammas", abl: "flammis" }
+                }
+            },
+            {
+                word: "gratia",
+                translation: "Dank, Gunst",
+                declension: "a-Deklination (f)",
+                forms: {
+                    sg: { nom: "gratia", gen: "gratiae", dat: "gratiae", akk: "gratiam", abl: "gratia" },
+                    pl: { nom: "gratiae", gen: "gratiarum", dat: "gratiis", akk: "gratias", abl: "gratiis" }
+                }
+            },
+            {
+                word: "amicus",
+                translation: "Freund",
+                declension: "o-Deklination (m)",
+                forms: {
+                    sg: { nom: "amicus", gen: "amici", dat: "amico", akk: "amicum", abl: "amico" },
+                    pl: { nom: "amici", gen: "amicorum", dat: "amicis", akk: "amicos", abl: "amicis" }
+                }
+            },
+            {
+                word: "cibus",
+                translation: "Speise, Nahrung",
+                declension: "o-Deklination (m)",
+                forms: {
+                    sg: { nom: "cibus", gen: "cibi", dat: "cibo", akk: "cibum", abl: "cibo" },
+                    pl: { nom: "cibi", gen: "ciborum", dat: "cibis", akk: "cibos", abl: "cibis" }
+                }
+            },
+            {
+                word: "focus",
+                translation: "Herd",
+                declension: "o-Deklination (m)",
+                forms: {
+                    sg: { nom: "focus", gen: "foci", dat: "foco", akk: "focum", abl: "foco" },
+                    pl: { nom: "foci", gen: "focorum", dat: "focis", akk: "focos", abl: "focis" }
+                }
+            },
+            {
+                word: "vinum",
+                translation: "Wein",
+                declension: "o-Deklination (n)",
+                forms: {
+                    sg: { nom: "vinum", gen: "vini", dat: "vino", akk: "vinum", abl: "vino" },
+                    pl: { nom: "vina", gen: "vinorum", dat: "vinis", akk: "vina", abl: "vinis" }
+                }
+            },
+            {
+                word: "donum",
+                translation: "Geschenk",
+                declension: "o-Deklination (n)",
+                forms: {
+                    sg: { nom: "donum", gen: "doni", dat: "dono", akk: "donum", abl: "dono" },
+                    pl: { nom: "dona", gen: "donorum", dat: "donis", akk: "dona", abl: "donis" }
+                }
+            },
+            {
+                word: "iudicium",
+                translation: "Urteil, Gericht",
+                declension: "o-Deklination (n)",
+                forms: {
+                    sg: { nom: "iudicium", gen: "iudicii", dat: "iudicio", akk: "iudicium", abl: "iudicio" },
+                    pl: { nom: "iudicia", gen: "iudiciorum", dat: "iudiciis", akk: "iudicia", abl: "iudiciis" }
+                }
+            },
+            {
+                word: "rex",
+                translation: "König",
+                declension: "3. Deklination (m)",
+                forms: {
+                    sg: { nom: "rex", gen: "regis", dat: "regi", akk: "regem", abl: "rege" },
+                    pl: { nom: "reges", gen: "regum", dat: "regibus", akk: "reges", abl: "regibus" }
+                }
+            },
+            {
+                word: "iuvenis",
+                translation: "junger Mann",
+                declension: "3. Deklination (m)",
+                forms: {
+                    sg: { nom: "iuvenis", gen: "iuvenis", dat: "iuveni", akk: "iuvenem", abl: "iuvene" },
+                    pl: { nom: "iuvenes", gen: "iuvenum", dat: "iuvenibus", akk: "iuvenes", abl: "iuvenibus" }
+                }
+            },
+            {
+                word: "tempus",
+                translation: "Zeit, Zeitraum",
+                declension: "3. Deklination (n)",
+                forms: {
+                    sg: { nom: "tempus", gen: "temporis", dat: "tempori", akk: "tempus", abl: "tempore" },
+                    pl: { nom: "tempora", gen: "temporum", dat: "temporibus", akk: "tempora", abl: "temporibus" }
+                }
+            }
+        ];
+
+        const adjectivesDb = [
+            {
+                word: "magnus, magna, magnum",
+                translation: "groß",
+                declension: "a-/o-Deklination",
+                forms: {
+                    sg: {
+                        m: { nom: "magnus", gen: "magni", dat: "magno", akk: "magnum", abl: "magno" },
+                        f: { nom: "magna", gen: "magnae", dat: "magnae", akk: "magnam", abl: "magna" },
+                        n: { nom: "magnum", gen: "magni", dat: "magno", akk: "magnum", abl: "magno" }
+                    },
+                    pl: {
+                        m: { nom: "magni", gen: "magnorum", dat: "magnis", akk: "magnos", abl: "magnis" },
+                        f: { nom: "magnae", gen: "magnarum", dat: "magnis", akk: "magnas", abl: "magnis" },
+                        n: { nom: "magna", gen: "magnorum", dat: "magnis", akk: "magna", abl: "magnis" }
+                    }
+                }
+            },
+            {
+                word: "gravis, gravis, grave",
+                translation: "schwer, wichtig, ernst",
+                declension: "3. Deklination",
+                forms: {
+                    sg: {
+                        m: { nom: "gravis", gen: "gravis", dat: "gravi", akk: "gravem", abl: "gravi" },
+                        f: { nom: "gravis", gen: "gravis", dat: "gravi", akk: "gravem", abl: "gravi" },
+                        n: { nom: "grave", gen: "gravis", dat: "gravi", akk: "grave", abl: "gravi" }
+                    },
+                    pl: {
+                        m: { nom: "graves", gen: "gravium", dat: "gravibus", akk: "graves", abl: "gravibus" },
+                        f: { nom: "graves", gen: "gravium", dat: "gravibus", akk: "graves", abl: "gravibus" },
+                        n: { nom: "gravia", gen: "gravium", dat: "gravibus", akk: "gravia", abl: "gravibus" }
+                    }
+                }
+            },
+            {
+                word: "felix (Gen. felicis)",
+                translation: "glücklich, vom Glück begünstigt",
+                declension: "3. Deklination (einendig)",
+                forms: {
+                    sg: {
+                        m: { nom: "felix", gen: "felicis", dat: "felici", akk: "felicem", abl: "felici" },
+                        f: { nom: "felix", gen: "felicis", dat: "felici", akk: "felicem", abl: "felici" },
+                        n: { nom: "felix", gen: "felicis", dat: "felici", akk: "felix", abl: "felici" }
+                    },
+                    pl: {
+                        m: { nom: "felices", gen: "felicium", dat: "felicibus", akk: "felices", abl: "felicibus" },
+                        f: { nom: "felices", gen: "felicium", dat: "felicibus", akk: "felices", abl: "felicibus" },
+                        n: { nom: "felicia", gen: "felicium", dat: "felicibus", akk: "felicia", abl: "felicibus" }
+                    }
+                }
+            }
+        ];
+
+        const pronounsDb = [
+            {
+                word: "is, ea, id",
+                translation: "er, sie, es (Personal-/Demonstrativpronomen)",
+                type: "gendered",
+                forms: {
+                    sg: {
+                        m: { nom: "is", gen: "eius", dat: "ei", akk: "eum", abl: "eo" },
+                        f: { nom: "ea", gen: "eius", dat: "ei", akk: "eam", abl: "ea" },
+                        n: { nom: "id", gen: "eius", dat: "ei", akk: "id", abl: "eo" }
+                    },
+                    pl: {
+                        m: { nom: "ei / ii", gen: "eorum", dat: "eis / iis", akk: "eos", abl: "eis / iis" },
+                        f: { nom: "eae", gen: "earum", dat: "eis / iis", akk: "eas", abl: "eis / iis" },
+                        n: { nom: "ea", gen: "eorum", dat: "eis / iis", akk: "ea", abl: "eis / iis" }
+                    }
+                }
+            },
+            {
+                word: "ego & tu",
+                translation: "ich & du (Personalpronomen)",
+                type: "personal",
+                forms: {
+                    sg: {
+                        ego: { nom: "ego", gen: "mei", dat: "mihi", akk: "me", abl: "me" },
+                        tu: { nom: "tu", gen: "tui", dat: "tibi", akk: "te", abl: "te" }
+                    },
+                    pl: {
+                        ego: { nom: "nos", gen: "nostri / nostrum", dat: "nobis", akk: "nos", abl: "nobis" },
+                        tu: { nom: "vos", gen: "vestri / vestrum", dat: "vobis", akk: "vos", abl: "vobis" }
+                    }
+                }
+            }
+        ];
+
+        const verbsDb = [
+            {
+                infinitive: "laudare",
+                translation: "loben",
+                conjugation: "a-Konjugation",
+                forms: {
+                    praesens: ["laudo", "laudas", "laudat", "laudamus", "laudatis", "laudant"],
+                    imperfekt: ["laudabam", "laudabas", "laudabat", "laudabamus", "laudabatis", "laudabant"],
+                    perfekt: ["laudavi", "laudavisti", "laudavit", "laudavimus", "laudavistis", "laudaverunt"],
+                    plusquamperfekt: ["laudaveram", "laudaveras", "laudaverat", "laudaveramus", "laudaveratis", "laudaverant"],
+                    futur1: ["laudabo", "laudabis", "laudabit", "laudabimus", "laudabitis", "laudabunt"],
+                    futur2: ["laudavero", "laudaveris", "laudaverit", "laudaverimus", "laudaveritis", "laudaverint"]
+                }
+            },
+            {
+                infinitive: "narrare",
+                translation: "erzählen, berichten",
+                conjugation: "a-Konjugation",
+                forms: {
+                    praesens: ["narro", "narras", "narrat", "narramus", "narratis", "narrant"],
+                    imperfekt: ["narrabam", "narrabas", "narrabat", "narrabamus", "narrabatis", "narrabant"],
+                    perfekt: ["narravi", "narravisti", "narravit", "narravimus", "narravistis", "narraverunt"],
+                    plusquamperfekt: ["narraveram", "narraveras", "narraverat", "narraveramus", "narraveratis", "narraverant"],
+                    futur1: ["narrabo", "narrabis", "narrabit", "narrabimus", "narrabitis", "narrabunt"],
+                    futur2: ["narravero", "narraveris", "narraverit", "narraverimus", "narraveritis", "narraverint"]
+                }
+            },
+            {
+                infinitive: "delectare",
+                translation: "erfreuen",
+                conjugation: "a-Konjugation",
+                forms: {
+                    praesens: ["delecto", "delectas", "delectat", "delectamus", "delectatis", "delectant"],
+                    imperfekt: ["delectabam", "delectabas", "delectabat", "delectabamus", "delectabatis", "delectabant"],
+                    perfekt: ["delectavi", "delectavisti", "delectavit", "delectavimus", "delectavistis", "delectaverunt"],
+                    plusquamperfekt: ["delectaveram", "delectaveras", "delectaverat", "delectaveramus", "delectaveratis", "delectaverant"],
+                    futur1: ["delectabo", "delectabis", "delectabit", "delectabimus", "delectabitis", "delectabunt"],
+                    futur2: ["delectavero", "delectaveris", "delectaverit", "delectaverimus", "delectaveritis", "delectaverint"]
+                }
+            },
+            {
+                infinitive: "monere",
+                translation: "mahnen, warnen",
+                conjugation: "e-Konjugation",
+                forms: {
+                    praesens: ["moneo", "mones", "monet", "monemus", "monetis", "monent"],
+                    imperfekt: ["monebam", "monebas", "monebat", "monebamus", "monebatis", "monebant"],
+                    perfekt: ["monui", "monuisti", "monuit", "monuimus", "monuistis", "monuerunt"],
+                    plusquamperfekt: ["monueram", "monueras", "monuerat", "monueramus", "monueratis", "monuerant"],
+                    futur1: ["monebo", "monebis", "monebit", "monebimus", "monebitis", "monebunt"],
+                    futur2: ["monuero", "monueris", "monuerit", "monuerimus", "monueritis", "monuerint"]
+                }
+            },
+            {
+                infinitive: "favere",
+                translation: "begünstigen, gewogen sein",
+                conjugation: "e-Konjugation",
+                forms: {
+                    praesens: ["faveo", "faves", "favet", "favemus", "favetis", "favent"],
+                    imperfekt: ["favebam", "favebas", "favebat", "favebamus", "favebatis", "favebant"],
+                    perfekt: ["favi", "favisti", "favit", "favimus", "favistis", "faverunt"],
+                    plusquamperfekt: ["faveram", "faveras", "faverat", "faveramus", "faveratis", "faverant"],
+                    futur1: ["favebo", "favebis", "favebit", "favebimus", "favebitis", "favebunt"],
+                    futur2: ["favero", "faveris", "faverit", "faverimus", "faveritis", "faverint"]
+                }
+            },
+            {
+                infinitive: "audire",
+                translation: "hören",
+                conjugation: "i-Konjugation",
+                forms: {
+                    praesens: ["audio", "audis", "audit", "audimus", "auditis", "audiunt"],
+                    imperfekt: ["audiebam", "audiebas", "audiebat", "audiebamus", "audiebatis", "audiebant"],
+                    perfekt: ["audivi", "audivisti", "audivit", "audivimus", "audivistis", "audiverunt"],
+                    plusquamperfekt: ["audiveram", "audiveras", "audiverat", "audiveramus", "audiveratis", "audiverant"],
+                    futur1: ["audiam", "audies", "audiet", "audiemus", "audietis", "audient"],
+                    futur2: ["audivero", "audiveris", "audiverit", "audiverimus", "audiveritis", "audiverint"]
+                }
+            },
+            {
+                infinitive: "mittere",
+                translation: "schicken, senden",
+                conjugation: "konsonantische Konjugation",
+                forms: {
+                    praesens: ["mitto", "mittis", "mittit", "mittimus", "mittitis", "mittunt"],
+                    imperfekt: ["mittebam", "mittebas", "mittebat", "mittebamus", "mittebatis", "mittebant"],
+                    perfekt: ["misi", "misisti", "misit", "misimus", "misistis", "miserunt"],
+                    plusquamperfekt: ["miseram", "miseras", "miserat", "miseramus", "miseratis", "miserant"],
+                    futur1: ["mittam", "mittes", "mittet", "mittemus", "mittetis", "mittent"],
+                    futur2: ["misero", "miseris", "miserit", "miserimus", "miseritis", "miserint"]
+                }
+            },
+            {
+                infinitive: "accedere",
+                translation: "herantreten, hingehen",
+                conjugation: "konsonantische Konjugation",
+                forms: {
+                    praesens: ["accedo", "accedis", "accedit", "accedimus", "acceditis", "accedent"],
+                    imperfekt: ["accedebam", "accedebas", "accedebat", "accedebamus", "accedebatis", "accedebant"],
+                    perfekt: ["accessi", "accessisti", "accessit", "accessimus", "accessistis", "accesserunt"],
+                    plusquamperfekt: ["accesseram", "accesseras", "accesserat", "accesseramus", "accesseratis", "accesserant"],
+                    futur1: ["accedam", "accedes", "accedet", "accedemus", "accedetis", "accedent"],
+                    futur2: ["accessero", "accesseris", "accesserit", "accesserimus", "accesseritis", "accesserint"]
+                }
+            },
+            {
+                infinitive: "capere",
+                translation: "fangen, ergreifen",
+                conjugation: "gemischte Konjugation",
+                forms: {
+                    praesens: ["capio", "capis", "capit", "capimus", "capitis", "capiunt"],
+                    imperfekt: ["capiebam", "capiebas", "capiebat", "capiebamus", "capiebatis", "capiebant"],
+                    perfekt: ["cepi", "cepisti", "cepit", "cepimus", "cepistis", "ceperunt"],
+                    plusquamperfekt: ["ceperam", "ceperas", "ceperat", "ceperamus", "ceperatis", "ceperant"],
+                    futur1: ["capiam", "capies", "capiet", "capiemus", "capietis", "capient"],
+                    futur2: ["cepero", "ceperis", "ceperit", "ceperimus", "ceperitis", "ceperint"]
+                }
+            },
+            {
+                infinitive: "esse",
+                translation: "sein",
+                conjugation: "unregelmäßig",
+                forms: {
+                    praesens: ["sum", "es", "est", "sumus", "estis", "sunt"],
+                    imperfekt: ["eram", "eras", "erat", "eramus", "eratis", "erant"],
+                    perfekt: ["fui", "fuisti", "fuit", "fuimus", "fuistis", "fuerunt"],
+                    plusquamperfekt: ["fueram", "fueras", "fuerat", "fueramus", "fueratis", "fuerant"],
+                    futur1: ["ero", "eris", "erit", "erimus", "eritis", "erunt"],
+                    futur2: ["fuero", "fueris", "fuerit", "fuerimus", "fueritis", "fuerint"]
+                }
+            }
+        ];
         
         function checkDailyPoints() {
             const today = new Date().toDateString();
@@ -474,18 +923,20 @@
                 
                 // Fade in welcome message
                 setTimeout(() => {
-                    document.getElementById('welcome-message').classList.add('show');
+                    const welcome = document.getElementById('welcome-message');
+                    if (welcome) welcome.classList.add('show');
                 }, 100);
                 
-                // After 3 seconds, transition to lesson selection
+                // After 3 seconds, transition to main menu
                 setTimeout(() => {
-                    document.getElementById('welcome-message').classList.remove('show');
+                    const welcome = document.getElementById('welcome-message');
+                    if (welcome) welcome.classList.remove('show');
                     setTimeout(() => {
-                        showLessonList();
+                        navigateTo('menu');
                     }, 500);
                 }, 3000);
             } else {
-                loadLessonList();
+                navigateTo('menu');
             }
         }
         
@@ -511,20 +962,82 @@
                 });
             }
         });
+
+        function navigateTo(view) {
+            currentView = view;
+            
+            // Hide all views
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('lesson-list').style.display = 'none';
+            document.getElementById('noun-list').style.display = 'none';
+            document.getElementById('adj-list').style.display = 'none';
+            document.getElementById('pron-list').style.display = 'none';
+            document.getElementById('verb-list').style.display = 'none';
+            document.getElementById('flashcard-container').style.display = 'none';
+            document.getElementById('table-container').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            
+            const backLink = document.querySelector('.back-link');
+            backLink.style.display = 'block';
+            
+            if (view === 'menu') {
+                backLink.style.display = 'none';
+                document.getElementById('main-menu').style.display = 'block';
+                document.getElementById('main-title').innerHTML = `
+                    Was willst du heute üben?<br>
+                    <small style="font-size: 14px; opacity: 0.7;">
+                        Punkte: ${userPoints} | Heute: ${dailyPointsEarned}/10
+                    </small>
+                `;
+            } else if (view === 'lessons') {
+                document.getElementById('lesson-list').style.display = 'block';
+                document.getElementById('main-title').textContent = "Wähle eine Lektion";
+            } else if (view === 'noun-selector') {
+                document.getElementById('noun-list').style.display = 'block';
+                document.getElementById('main-title').textContent = "Wähle ein Substantiv";
+            } else if (view === 'adj-selector') {
+                document.getElementById('adj-list').style.display = 'block';
+                document.getElementById('main-title').textContent = "Wähle ein Adjektiv";
+            } else if (view === 'pron-selector') {
+                document.getElementById('pron-list').style.display = 'block';
+                document.getElementById('main-title').textContent = "Wähle ein Pronomen";
+            } else if (view === 'verb-selector') {
+                document.getElementById('verb-list').style.display = 'block';
+                document.getElementById('main-title').textContent = "Wähle ein Verb";
+            } else if (view === 'flashcards') {
+                document.getElementById('flashcard-container').style.display = 'block';
+            } else if (view === 'table') {
+                document.getElementById('table-container').style.display = 'block';
+                
+                let categoryName = 'Tabelle';
+                if (tableType === 'nouns') categoryName = 'Substantiv-Tabelle';
+                else if (tableType === 'adjectives') categoryName = 'Adjektiv-Tabelle';
+                else if (tableType === 'pronouns') categoryName = 'Pronomen-Tabelle';
+                else if (tableType === 'verbs') categoryName = 'Verb-Tabelle';
+                
+                document.getElementById('main-title').textContent = categoryName;
+            } else if (view === 'results') {
+                document.getElementById('results').style.display = 'block';
+                document.getElementById('main-title').textContent = 'Ergebnisse';
+            }
+        }
+        
+        function goBack() {
+            if (currentView === 'lessons' || currentView === 'noun-selector' || currentView === 'adj-selector' || currentView === 'pron-selector' || currentView === 'verb-selector') {
+                navigateTo('menu');
+            } else if (currentView === 'flashcards' || currentView === 'results') {
+                navigateTo('lessons');
+            } else if (currentView === 'table') {
+                if (tableType === 'nouns') navigateTo('noun-selector');
+                else if (tableType === 'adjectives') navigateTo('adj-selector');
+                else if (tableType === 'pronouns') navigateTo('pron-selector');
+                else if (tableType === 'verbs') navigateTo('verb-selector');
+            }
+        }
         
         function showLessonList() {
             checkDailyPoints();
-            document.getElementById('main-title').innerHTML = `
-                Was willst du heute üben?<br>
-                <small style="font-size: 14px; opacity: 0.7;">
-                    Punkte: ${userPoints} | Heute: ${dailyPointsEarned}/10
-                </small>
-            `;
-            document.getElementById('main-title').classList.add('fade-in');
-            document.getElementById('lesson-list').style.display = 'block';
-            document.getElementById('flashcard-container').style.display = 'none';
-            document.getElementById('results').style.display = 'none';
-            document.querySelector('.back-link').style.display = 'none';
+            navigateTo('lessons');
             loadLessonList();
         }
         
@@ -538,17 +1051,14 @@
             // Try to detect additional lessons asynchronously
             detectLessonFiles().then(detectedLessons => {
                 if (detectedLessons.length > 0) {
-                    // Add any lessons that aren't already in the hardcoded list
                     detectedLessons.forEach(detectedLesson => {
                         if (!lessonsToUse.find(l => l.number === detectedLesson.number)) {
                             lessonsToUse.push(detectedLesson);
                         }
                     });
                     
-                    // Sort by lesson number
                     lessonsToUse.sort((a, b) => a.number - b.number);
                     
-                    // Re-render the list with all lessons
                     lessonList.innerHTML = '';
                     lessonsToUse.forEach((lesson, index) => {
                         const li = document.createElement('li');
@@ -665,10 +1175,7 @@
                 console.log('Shuffled vocab:', currentVocabData);
                 
                 document.getElementById('main-title').textContent = lessonTitle;
-                document.getElementById('lesson-list').style.display = 'none';
-                document.getElementById('flashcard-container').style.display = 'block';
-                document.getElementById('results').style.display = 'none';
-                document.querySelector('.back-link').style.display = 'block';
+                navigateTo('flashcards');
                 document.getElementById('total-cards').textContent = currentVocabData.length;
                 
                 // Reset and trigger animations
@@ -788,15 +1295,13 @@
         }
         
         function showResults() {
+            navigateTo('results');
             const total = currentVocabData.length;
             const percentage = Math.round((correctAnswers / total) * 100);
             
-            document.getElementById('flashcard-container').style.display = 'none';
-            document.getElementById('results').style.display = 'block';
             document.getElementById('percentage').textContent = percentage + '%';
             document.getElementById('correct-count').textContent = `${correctAnswers} von ${total} richtig`;
             
-            // Award 5 points for completing the lesson
             addPoints(5);
             
             const wrongAnswersDiv = document.getElementById('wrong-answers');
@@ -881,6 +1386,534 @@
             progress.style.animation = 'fadeIn 0.4s ease-in-out 0.2s forwards';
             
             showCard();
+        }
+
+        // ==========================================
+        // GRAMMAR TABLES IMPLEMENTATION
+        // ==========================================
+        
+        function showNounSelector() {
+            const list = document.getElementById('noun-list');
+            list.innerHTML = '';
+            
+            nounsDb.forEach((noun, index) => {
+                const li = document.createElement('li');
+                li.className = 'lesson-item';
+                li.style.animationDelay = `${index * 0.05}s`;
+                li.innerHTML = `
+                    <div class="latin">${noun.word}</div>
+                    <div class="german">${noun.translation} (${noun.declension})</div>
+                `;
+                li.onclick = () => renderNounTable(noun);
+                list.appendChild(li);
+            });
+            
+            navigateTo('noun-selector');
+        }
+
+        function showAdjSelector() {
+            const list = document.getElementById('adj-list');
+            list.innerHTML = '';
+            
+            adjectivesDb.forEach((adj, index) => {
+                const li = document.createElement('li');
+                li.className = 'lesson-item';
+                li.style.animationDelay = `${index * 0.05}s`;
+                li.innerHTML = `
+                    <div class="latin">${adj.word}</div>
+                    <div class="german">${adj.translation} (${adj.declension})</div>
+                `;
+                li.onclick = () => renderAdjectiveTable(adj);
+                list.appendChild(li);
+            });
+            
+            navigateTo('adj-selector');
+        }
+
+        function showPronSelector() {
+            const list = document.getElementById('pron-list');
+            list.innerHTML = '';
+            
+            pronounsDb.forEach((pron, index) => {
+                const li = document.createElement('li');
+                li.className = 'lesson-item';
+                li.style.animationDelay = `${index * 0.05}s`;
+                li.innerHTML = `
+                    <div class="latin">${pron.word}</div>
+                    <div class="german">${pron.translation}</div>
+                `;
+                li.onclick = () => renderPronounTable(pron);
+                list.appendChild(li);
+            });
+            
+            navigateTo('pron-selector');
+        }
+
+        function showVerbSelector() {
+            const list = document.getElementById('verb-list');
+            list.innerHTML = '';
+            
+            verbsDb.forEach((verb, index) => {
+                const li = document.createElement('li');
+                li.className = 'lesson-item';
+                li.style.animationDelay = `${index * 0.05}s`;
+                li.innerHTML = `
+                    <div class="latin">${verb.infinitive}</div>
+                    <div class="german">${verb.translation} (${verb.conjugation})</div>
+                `;
+                li.onclick = () => renderVerbTable(verb);
+                list.appendChild(li);
+            });
+            
+            navigateTo('verb-selector');
+        }
+
+        function renderNounTable(noun) {
+            tableType = 'nouns';
+            document.getElementById('table-title').innerHTML = `<strong>${noun.word}</strong> (${noun.translation}) &mdash; <em>${noun.declension}</em>`;
+            
+            const container = document.getElementById('table-content');
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kasus</th>
+                            <th>Singular</th>
+                            <th>Plural</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Nominativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.sg.nom}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.pl.nom}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Genitiv</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.sg.gen}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.pl.gen}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.sg.dat}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.pl.dat}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Akkusativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.sg.akk}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.pl.akk}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ablativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.sg.abl}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${noun.forms.pl.abl}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            
+            navigateTo('table');
+        }
+
+        function renderAdjectiveTable(adj) {
+            tableType = 'adjectives';
+            document.getElementById('table-title').innerHTML = `<strong>${adj.word}</strong> (${adj.translation}) &mdash; <em>${adj.declension}</em>`;
+            
+            const container = document.getElementById('table-content');
+            container.innerHTML = `
+                <h3 style="margin-top:10px; font-weight:normal; font-size:16px;">Singular</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kasus</th>
+                            <th>Maskulinum</th>
+                            <th>Femininum</th>
+                            <th>Neutrum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Nominativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.m.nom}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.f.nom}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.n.nom}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Genitiv</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.m.gen}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.f.gen}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.n.gen}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.m.dat}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.f.dat}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.n.dat}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Akkusativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.m.akk}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.f.akk}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.n.akk}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ablativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.m.abl}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.f.abl}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.sg.n.abl}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3 style="margin-top:20px; font-weight:normal; font-size:16px;">Plural</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kasus</th>
+                            <th>Maskulinum</th>
+                            <th>Femininum</th>
+                            <th>Neutrum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Nominativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.m.nom}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.f.nom}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.n.nom}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Genitiv</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.m.gen}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.f.gen}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.n.gen}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.m.dat}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.f.dat}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.n.dat}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Akkusativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.m.akk}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.f.akk}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.n.akk}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ablativ</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.m.abl}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.f.abl}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${adj.forms.pl.n.abl}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            
+            navigateTo('table');
+        }
+
+        function renderPronounTable(pronoun) {
+            tableType = 'pronouns';
+            document.getElementById('table-title').innerHTML = `<strong>${pronoun.word}</strong> &mdash; <em>${pronoun.translation}</em>`;
+            
+            const container = document.getElementById('table-content');
+            
+            if (pronoun.type === 'gendered') {
+                container.innerHTML = `
+                    <h3 style="margin-top:10px; font-weight:normal; font-size:16px;">Singular</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kasus</th>
+                                <th>Maskulinum</th>
+                                <th>Femininum</th>
+                                <th>Neutrum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Nominativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.m.nom}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.f.nom}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.n.nom}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Genitiv</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.m.gen}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.f.gen}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.n.gen}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.m.dat}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.f.dat}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.n.dat}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Akkusativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.m.akk}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.f.akk}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.n.akk}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ablativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.m.abl}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.f.abl}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.n.abl}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h3 style="margin-top:20px; font-weight:normal; font-size:16px;">Plural</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kasus</th>
+                                <th>Maskulinum</th>
+                                <th>Femininum</th>
+                                <th>Neutrum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Nominativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.m.nom}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.f.nom}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.n.nom}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Genitiv</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.m.gen}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.f.gen}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.n.gen}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.m.dat}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.f.dat}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.n.dat}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Akkusativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.m.akk}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.f.akk}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.n.akk}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ablativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.m.abl}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.f.abl}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.n.abl}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                container.innerHTML = `
+                    <h3 style="margin-top:10px; font-weight:normal; font-size:16px;">Singular</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kasus</th>
+                                <th>1. Person (ego)</th>
+                                <th>2. Person (tu)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Nominativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.ego.nom}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.tu.nom}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Genitiv</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.ego.gen}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.tu.gen}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.ego.dat}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.tu.dat}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Akkusativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.ego.akk}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.tu.akk}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ablativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.ego.abl}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.sg.tu.abl}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h3 style="margin-top:20px; font-weight:normal; font-size:16px;">Plural</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kasus</th>
+                                <th>1. Person (nos)</th>
+                                <th>2. Person (vos)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Nominativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.ego.nom}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.tu.nom}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Genitiv</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.ego.gen}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.tu.gen}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.ego.dat}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.tu.dat}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Akkusativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.ego.akk}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.tu.akk}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ablativ</strong></td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.ego.abl}</td>
+                                <td class="coverable" onclick="toggleCell(this)">${pronoun.forms.pl.tu.abl}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+            
+            navigateTo('table');
+        }
+
+        function renderVerbTable(verb) {
+            tableType = 'verbs';
+            document.getElementById('table-title').innerHTML = `<strong>${verb.infinitive}</strong> (${verb.translation}) &mdash; <em>${verb.conjugation}</em>`;
+            
+            const container = document.getElementById('table-content');
+            container.innerHTML = `
+                <h3 style="margin-top:10px; font-weight:normal; font-size:16px;">Präsensstamm (Präsens, Imperfekt, Futur I)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Person</th>
+                            <th>Präsens</th>
+                            <th>Imperfekt</th>
+                            <th>Futur I</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1. Sg. (ich)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.praesens[0]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.imperfekt[0]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur1[0]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2. Sg. (du)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.praesens[1]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.imperfekt[1]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur1[1]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3. Sg. (er/sie/es)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.praesens[2]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.imperfekt[2]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur1[2]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>1. Pl. (wir)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.praesens[3]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.imperfekt[3]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur1[3]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2. Pl. (ihr)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.praesens[4]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.imperfekt[4]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur1[4]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3. Pl. (sie)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.praesens[5]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.imperfekt[5]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur1[5]}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top:20px; font-weight:normal; font-size:16px;">Perfektstamm (Perfekt, Plusquamperfekt, Futur II)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Person</th>
+                            <th>Perfekt</th>
+                            <th>Plusquamperfekt</th>
+                            <th>Futur II</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>1. Sg. (ich)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.perfekt[0]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.plusquamperfekt[0]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur2[0]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2. Sg. (du)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.perfekt[1]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.plusquamperfekt[1]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur2[1]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3. Sg. (er/sie/es)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.perfekt[2]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.plusquamperfekt[2]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur2[2]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>1. Pl. (wir)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.perfekt[3]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.plusquamperfekt[3]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur2[3]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>2. Pl. (ihr)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.perfekt[4]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.plusquamperfekt[4]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur2[4]}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>3. Pl. (sie)</strong></td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.perfekt[5]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.plusquamperfekt[5]}</td>
+                            <td class="coverable" onclick="toggleCell(this)">${verb.forms.futur2[5]}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            
+            navigateTo('table');
+        }
+
+        function toggleCell(cell) {
+            cell.classList.toggle('covered');
+        }
+
+        function coverAllCells() {
+            const cells = document.querySelectorAll('.coverable');
+            cells.forEach(cell => cell.classList.add('covered'));
+        }
+
+        function revealAllCells() {
+            const cells = document.querySelectorAll('.coverable');
+            cells.forEach(cell => cell.classList.remove('covered'));
         }
         
         checkUserName();
